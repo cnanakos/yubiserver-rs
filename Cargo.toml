@@ -1,0 +1,55 @@
+[package]
+name = "yubiserver-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Chrysostomos Nanakos"]
+description = "Yubikey server"
+repository = "https://github.com/cnanakos/yubiserver-rs"
+license = "Apache-2.0"
+
+[dependencies]
+aes = "0.8.3"
+anyhow = "1.0.75"
+axum = "0.6.20"
+base32 = "0.4.0"
+base64 = "0.21.5"
+chrono = "0.4.31"
+clap = { version = "4.4.8", features = ["derive"] }
+color-eyre = "0.6.2"
+crc = "3.0.1"
+ecb = "0.1.2"
+hex = "0.4.3"
+hmac = "0.12.1"
+log = "0.4.20"
+parking_lot = "0.12.1"
+pretty_env_logger = "0.5.0"
+rand = "0.8.5"
+serde = { version = "1.0.188", features = ["derive"] }
+sha1 = "0.10.6"
+sqlite = "0.32.0"
+stdext = "0.3.1"
+structopt = "0.3.26"
+thiserror = "1.0.50"
+tokio = { version = "1.32.0", features = ["full"] }
+
+[profile.dev]
+opt-level = 0
+debug = 0
+codegen-units = 4
+lto = false
+incremental = true
+panic = 'unwind'
+debug-assertions = true
+overflow-checks = false
+rpath = false
+
+[profile.release]
+opt-level = 3
+debug = false
+codegen-units = 1
+lto = "thin"
+incremental = false
+panic = 'unwind'
+debug-assertions = false
+overflow-checks = false
+rpath = false
