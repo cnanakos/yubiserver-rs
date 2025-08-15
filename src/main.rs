@@ -26,6 +26,15 @@ use utils::hmac_sha1;
 mod pool;
 use pool::ObjectPool;
 
+macro_rules! safe_bind {
+    ($stmt:expr, $index:expr, $value:expr) => {
+        $stmt.bind(($index, $value)).map_err(|e| {
+            error_report!(e);
+            OtpStatus::BackendError
+        })?
+    };
+}
+
 type Aes128EcbDec = ecb::Decryptor<aes::Aes128>;
 
 const OTP_TOKEN_SIZE: usize = 44;
@@ -388,10 +397,10 @@ impl<'a> Yubiserver<'a> {
             OtpStatus::BackendError
         })?;
 
-        statement.bind((1, counter)).unwrap();
-        statement.bind((2, publicname)).unwrap();
-        statement.bind((3, user.nickname.as_str())).unwrap();
-        statement.bind((4, user.counter)).unwrap();
+        safe_bind!(statement, 1, counter);
+        safe_bind!(statement, 2, publicname);
+        safe_bind!(statement, 3, user.nickname.as_str());
+        safe_bind!(statement, 4, user.counter);
         match statement.next() {
             Ok(sqlite::State::Done) => Ok(()),
             Ok(sqlite::State::Row) => {
@@ -412,9 +421,9 @@ impl<'a> Yubiserver<'a> {
             OtpStatus::BackendError
         })?;
 
-        statement.bind((1, counter)).unwrap();
-        statement.bind((2, user.nickname.as_str())).unwrap();
-        statement.bind((3, user.counter)).unwrap();
+        safe_bind!(statement, 1, counter);
+        safe_bind!(statement, 2, user.nickname.as_str());
+        safe_bind!(statement, 3, user.counter);
         match statement.next() {
             Ok(sqlite::State::Done) => Ok(()),
             Ok(sqlite::State::Row) => {
@@ -663,7 +672,7 @@ impl<'a> Yubiserver<'a> {
             OtpStatus::BackendError
         })?;
 
-        statement.bind((1, id)).unwrap();
+        safe_bind!(statement, 1, id);
         match statement.next() {
             Ok(sqlite::State::Done) => Err(OtpStatus::NoSuchClient),
             Ok(sqlite::State::Row) => {
@@ -726,7 +735,7 @@ impl<'a> Yubiserver<'a> {
             OtpStatus::BackendError
         })?;
 
-        statement.bind((1, id)).unwrap();
+        safe_bind!(statement, 1, id);
         match statement.next() {
             Ok(sqlite::State::Done) => Err(OtpStatus::NoSuchClient),
             Ok(sqlite::State::Row) => {
@@ -769,7 +778,7 @@ impl<'a> Yubiserver<'a> {
             OtpStatus::BackendError
         })?;
 
-        statement.bind((1, id)).unwrap();
+        safe_bind!(statement, 1, id);
         match statement.next() {
             Ok(sqlite::State::Done) => Err(OtpStatus::NoSuchClient),
             Ok(sqlite::State::Row) => {
@@ -819,16 +828,22 @@ impl<'a> Yubiserver<'a> {
             OtpStatus::BackendError
         })?;
 
-        statement.bind((1, counter)).unwrap();
-        statement.bind((2, timestamp)).unwrap();
-        statement.bind((3, nonce)).unwrap();
-        statement.bind((4, publicname)).unwrap();
-        statement.bind((5, user.nickname.as_str())).unwrap();
-        statement.bind((6, user.counter)).unwrap();
-        statement.bind((7, user.time)).unwrap();
-        statement.bind((8, user.nonce.as_str())).unwrap();
+        safe_bind!(statement, 1, counter);
+        safe_bind!(statement, 2, timestamp);
+        safe_bind!(statement, 3, nonce);
+        safe_bind!(statement, 4, publicname);
+        safe_bind!(statement, 5, user.nickname.as_str());
+        safe_bind!(statement, 6, user.counter);
+        safe_bind!(statement, 7, user.time);
+        safe_bind!(statement, 8, user.nonce.as_str());
         match statement.next() {
-            Ok(sqlite::State::Done) => Ok(()),
+            Ok(sqlite::State::Done) => {
+                if db.change_count() == 0 {
+                    Err(OtpStatus::ReplayedOtp)
+                } else {
+                    Ok(())
+                }
+            }
             Ok(sqlite::State::Row) => {
                 error_report!("counter/timestamp/nonce update statement returned a row");
                 Err(OtpStatus::BackendError)

@@ -27,7 +27,7 @@ impl<T> ObjectPool<T> {
     }
 
     #[inline]
-    pub fn get(&self) -> ReusableObject<T> {
+    pub fn get(&self) -> ReusableObject<'_, T> {
         let mut objects = self.objects.lock();
         let mut object = objects.pop();
         while object.is_none() {

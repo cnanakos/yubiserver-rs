@@ -1,4 +1,5 @@
 use std::path::Path;
+
 pub type DB = sqlite::ConnectionThreadSafe;
 
 pub fn connect(db_path: impl AsRef<Path>) -> Result<DB, crate::Error> {
